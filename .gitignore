@@ -1,0 +1,3 @@
+*.[ado]
+!*.sh
+/shell_scripts/test
