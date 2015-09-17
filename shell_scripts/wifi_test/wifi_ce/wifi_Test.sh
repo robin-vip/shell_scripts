@@ -64,7 +64,7 @@ return
 
 SetPower() {
 echo ********************************Setting Output Power******************************
-echo "Please input ATETXPOW0(0~32)"
+echo "Please input ATETXPOW0(0~31)"
 
 echo "default setting is 18"
 echo -n "ATETXPOW0="
@@ -85,7 +85,7 @@ ifconfig ra0 down
 ifconfig ra0 up
 clear
 
-iwpriv ra0 set ATE=ATESTOP
+#iwpriv ra0 set ATE=ATESTOP
 iwpriv ra0 set ATE=ATESTART
 iwpriv ra0 set ATEDA=00:11:22:33:44:55
 iwpriv ra0 set ATESA=00:aa:bb:cc:dd:ee
@@ -96,6 +96,10 @@ iwpriv ra0 set ATETXLEN=1024
 iwpriv ra0 set ATETXCNT=100000000
 iwpriv ra0 set ATETXFREQOFFSET=32
 iwpriv ra0 set ATETXANT=0
+
+iwpriv ra0 set ATECHANNEL=9
+iwpriv ra0 set ATETXPOW0=18
+iwpriv ra0 set ATETXMODE=3
 
 return
 }
@@ -109,6 +113,23 @@ iwpriv ra0 stat
 return
 }
 
+SetDataRate() {
+echo ********************************set Data rate****************************
+echo "Please input Data rate(0 ~ 15, 33:auto rate)"
+
+echo "default setting is 33"
+echo -n "TxRate="
+read TxRate
+
+if [ ${#TxRate} = '0' ]
+then TxRate=33
+fi
+
+iwpriv ra0 set TxRate=$TxRate
+
+return
+}
+
 SetTxMenuChoice() {
 clear
 echo **********************TX Mode Setting of Wi-Fi Certification Test********************
@@ -116,6 +137,7 @@ echo "Options :-"
 echo "       a)    All set"
 echo "       b)    Set BandWidth"
 echo "       c)    Set Channel"
+echo "       d)    Set DataRate"
 echo "       o)    Set Output Power"
 echo "       p)    Set Protocol"
 echo "       r)    Restart wifi"
@@ -137,22 +159,30 @@ do
 			SetPreWork;
 			SetTxMode;
 			SetBandWidth;
+			SetDataRate;
 			SetChannel;
 			SetPower;
 			StartTest;;
 		b)
+			SetPreWork;
 			SetBandWidth;
 			StartTest;;
 		c)
 			#iwpriv ra0 set ATE=ATESTOP
 			#iwpriv ra0 set ATE=ATESTART
+			SetPreWork;
 			SetChannel;
+			StartTest;;
+		d)
+			SetPreWork;
+			SetDataRate;
 			StartTest;;
 		o)
 			SetPower;
 			StartTest;;
 		p)
 			SetPreWork;
+			SetTxMode;
 			StartTest;;
 		r)
 			ifconfig ra0 down
@@ -170,7 +200,7 @@ echo **********************RX Mode Setting of Wi-Fi Certification Test**********
 ifconfig ra0 down
 ifconfig ra0 up
 
-iwpriv ra0 set ATE=ATESTOP
+#iwpriv ra0 set ATE=ATESTOP
 iwpriv ra0 set ATE=ATESTART
 iwpriv ra0 set ATECHANNEL=6
 iwpriv ra0 set ATETXFREQOFFSET=38
@@ -212,3 +242,5 @@ done
 }
 
 main
+
+#iwpriv ra0 set ATEHELP=1   // for ATE Command help.
