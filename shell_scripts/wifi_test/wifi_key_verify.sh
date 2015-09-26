@@ -132,10 +132,10 @@ get_connect_status() {
 
 connect_AP() {
 	AuthMode_EN=$(iwpriv $Interface get_site_survey | grep "$SSID" | awk '{printf $4 "\n"}')
-	if [ "$AuthMode_EN" = "WPA2PSK/TKIP" ] || [ "$AuthMode_EN" = "WPA1PSKWPA2PSK/TKIP" ]
+	if [ "$AuthMode_EN" = "WPA2PSK/TKIP" ] || [ "$AuthMode_EN" = "WPA2PSK/TKIPAES" ] || [ "$AuthMode_EN" = "WPA1PSKWPA2PSK/TKIP" ] || [ "$AuthMode_EN" = "WPA1PSKWPA2PSK/TKIPAES" ]
 	then
 		set_WPA2PSK_TKIP
-	elif [ "$AuthMode_EN" = "WPAPSK/TKIP" ]
+	elif [ "$AuthMode_EN" = "WPAPSK/TKIP" ] || [ "$AuthMode_EN" = "WPAPSK/TKIPAES" ]
 	then
 		set_WPAPSK_TKIP
 	
