@@ -1,0 +1,105 @@
+#!/bin/sh
+#
+# An example hook script for the "post-receive" event.
+#
+# The "post-receive" script is run after receive-pack has accepted a pack
+# and the repository has been updated.  It is passed arguments in through
+# stdin in the form
+#  <oldrev> <newrev> <refname>
+# For example:
+#  aa453216d1b3e49e7f6f98441fa56946ddcd6a20 68f7abf4e6f922807889f52bc043ecd31b79f814 refs/heads/master
+#
+# see contrib/hooks/ for a sample, or uncomment the next line and
+# rename the file to "post-receive".
+
+#. /usr/share/doc/git-core/contrib/hooks/post-receive-email
+CUR_DIR=`pwd`
+PRO_NAME=`echo $CUR_DIR | cut -d '/' -f6 | cut -d "." -f1`
+#echo "PRO_NAME=$PRO_NAME"
+
+read STDIN
+BRANCH_NAME=`echo $STDIN | cut -d ' ' -f3 | cut -d '/' -f3`
+#echo "BRANCH_NAME=$BRANCH_NAME"
+
+IP4_GIT_SERVER_IP=192.168.2.134
+GIT_SERVER_AUTH_REPOS="gitosis-admin.git"
+IP4_GIT_ORIGIN_NAME="git@$IP4_GIT_SERVER_IP:$GIT_SERVER_AUTH_REPOS"
+
+echo "Push update to IP4 git server repos"
+git push origin $BRANCH_NAME:$BRANCH_NAME
+if test $? -ne 0;then
+	echo "Faild to push update to IP4 git server repos"
+	echo 0 > /tmp/git_branch_nu
+	exit 1;
+fi
+
+echo
+
+# Recover IP4 git server authority setting
+echo "recover IP4 git server authority setting"
+cd /tmp
+
+if [ -d /tmp/gitosis-admin ]; then
+        cd gitosis-admin
+
+        env -i git remote -v | grep origin | grep $IP4_GIT_ORIGIN_NAME > /dev/null
+        if test $? -ne 0; then
+                env -i git remote -v | grep origin > /dev/null
+                if test $? -ne 0; then
+                        env -i git remote rm origin
+                fi  
+        env -i git remote add origin $IP4_GIT_ORIGIN_NAME > /dev/null
+        fi  
+
+        env -i git remote -v | grep origin | grep $IP4_GIT_ORIGIN_NAME > /dev/null
+        if test $? -ne 0; then
+                echo "$0: Faild to update $GIT_SERVER_AUTH_REPOS's origin to $IP4_GIT_ORIGIN_NAME!"
+		echo 0 > /tmp/git_branch_nu
+                exit 1
+        fi  
+    
+#	env -i git pull origin master:master &> /dev/null
+	env -i git pull >/dev/null
+        if test $? -ne 0;then
+                echo "$0: Failed to git pull from $IP4_GIT_ORIGIN_NAME!"
+		echo 0 > /tmp/git_branch_nu
+                exit 1;
+        fi    
+else
+        git clone $IP4_GIT_ORIGIN_NAME
+        if test $? -ne 0;then
+                echo "$0: Failed to git clone $IP4_GIT_ORIGIN_NAME"
+		echo 0 > /tmp/git_branch_nu
+                exit 1;
+        fi
+        cd gitosis-admin
+fi
+
+#env -i git checkout master &> /dev/null
+
+if [ -f gitosis.conf_bk ]; then
+	mv gitosis.conf_bk gitosis.conf
+	env -i git rm -f gitosis.conf_bk > /dev/null
+fi
+
+if [ -f /tmp/git_hooks_file ]; then
+#	sed -i "`cat gitosis.conf | grep -n "\[group $PRO_NAME\]" -A 2 | grep members | cut -d "-" -f1`s/^members = .*$/members = `cat /tmp/git_hooks_file`/g" gitosis.conf
+	sed -i "`cat gitosis.conf | grep -n "\[group $PRO_NAME\]" -A 2 | grep members | cut -d "-" -f1`s/^members = .*$/`cat /tmp/git_hooks_file`/g" gitosis.conf
+	rm -f /tmp/git_hooks_file
+fi
+
+env -i git add .
+env -i git commit -m "recover git server authority setting" > /dev/null
+#env -i git commit -m "recover git server authority setting" > /dev/null 2>1&
+env -i git push >/dev/null 2>&1
+if test $? -ne 0;then
+	echo "$0: Faild to recover IP4 git server authority setting"
+	echo 0 > /tmp/git_branch_nu
+	exit 1;
+fi
+cd ..
+rm -fr gitosis-admin > /dev/null
+
+echo 0 > /tmp/git_branch_nu
+exit 0
+
