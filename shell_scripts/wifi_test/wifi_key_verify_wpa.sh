@@ -1,6 +1,6 @@
 #!/bin/sh
 
-Interface=wlan0
+Interface=ra0
 DHCP_ENABLE=true
 IP=""
 log=/tmp/wifi.log
@@ -21,9 +21,12 @@ then
 	exit 1;
 fi
 
-count=ps -ef | grep -c wpa_supplicant
-if [ "$?" = "1" ]; then
+ifconfig $Interface up
+
+count=$(ps -ef | grep -c wpa_supplicant)
+if [ "$count" = "1" ]; then
 		wpa_supplicant -Dwext -i$Interface -c /etc/wpa_supplicant.conf -B | tee -a $log
+		run_time=1
 		sleep 2
 fi
 
@@ -121,12 +124,21 @@ get_connect_status() {
 
 connect_AP() {
 	wpa_cli -i$Interface -p/var/run/wpa_supplicant scan
-	usleep 1000
+
+	if [ "$run_time" = "1" ]; then
+		sleep 5
+	fi
+	usleep 10000
 
 	AuthMode_EN=$(wpa_cli -i$Interface -p/var/run/wpa_supplicant scan_results | grep "$SSID" | awk '{printf $4 "\n"}')
 	echo
 	echo "AuthMode_EN=$AuthMode_EN"
 	if [ "$AuthMode_EN" = "[ESS]" ]; then
+		set_OPEN_NONE
+		return
+	fi
+	
+	if [ "$AuthMode_EN" = "[WPS][ESS]" ]; then
 		set_OPEN_NONE
 		return
 	fi
