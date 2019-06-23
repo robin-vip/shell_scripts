@@ -1,0 +1,71 @@
+#!/bin/sh
+CUR_DIR=`pwd`
+PRO_NAME=`echo $CUR_DIR | cut -d '/' -f6 | cut -d "." -f1`
+#echo "PRO_NAME=$PRO_NAME"
+
+read STDIN
+BRANCH_NAME=`echo $STDIN | cut -d ' ' -f3 | cut -d '/' -f3`
+#echo "BRANCH_NAME=$BRANCH_NAME"
+
+IP4_GIT_SERVER_IP=192.168.2.134
+GIT_SERVER_AUTH_REPOS="gitosis-admin.git"
+IP4_GIT_ORIGIN_NAME="git@$IP4_GIT_SERVER_IP:$GIT_SERVER_AUTH_REPOS"
+
+# modify IP4 git server authority.
+echo "Modify IP4 git server authority"
+cd /tmp
+if [ -d /tmp/gitosis-admin ]; then
+	cd gitosis-admin
+
+	env -i git remote -v | grep origin | grep $IP4_GIT_ORIGIN_NAME > /dev/null
+	if test $? -ne 0; then
+		env -i git remote -v | grep origin > /dev/null
+		if test $? -eq 0; then
+			env -i git remote rm origin
+		fi
+	env -i git remote add origin $IP4_GIT_ORIGIN_NAME
+	fi
+
+	env -i git remote -v | grep origin | grep $IP4_GIT_ORIGIN_NAME > /dev/null
+	if test $? -ne 0; then
+		echo "$0: Faild to update $GIT_SERVER_AUTH_REPOS's origin to $IP4_GIT_ORIGIN_NAME!"
+		exit 1
+	fi
+	
+#	env -i git pull origin master:master &> /dev/null
+	env -i git pull >/dev/null
+	if test $? -ne 0;then
+                echo "$0: Failed to git pull from $IP4_GIT_ORIGIN_NAME!"
+                exit 1;
+        fi	 
+else
+	git clone $IP4_GIT_ORIGIN_NAME >/dev/null
+	if test $? -ne 0;then
+		echo "$0: Failed to git clone $IP4_GIT_ORIGIN_NAME"
+		exit 1;
+	fi
+	cd gitosis-admin
+fi
+
+#env -i git checkout master &> /dev/null
+
+#cp gitosis.conf gitosis.conf_bk
+cat gitosis.conf | grep "\[group $PRO_NAME\]" -A 2 | grep members > /tmp/git_hooks_file
+sed -i "`cat gitosis.conf | grep -n "\[group $PRO_NAME\]" -A 2 | grep members | cut -d "-" -f1`s/^members = .*$/members = git_1.63/g" gitosis.conf
+env -i git add .
+#env -i git commit -m "disable other users' writeable authority expect git_163 in project testkit $PRO_NAME" > /dev/null 2>1&
+env -i git commit -m "disable other users' writeable authority expect git_163 in project $PRO_NAME" > /dev/null
+
+#env -i git push origin master:master >/dev/null
+env -i git push >/dev/null 2>&1
+if test $? -ne 0;then
+	echo "$0: Failed to modify IP4 git server authority"
+	exit 1;
+fi
+
+#cd ..
+#rm gitosis-admin -fr
+
+echo
+exit 0
+

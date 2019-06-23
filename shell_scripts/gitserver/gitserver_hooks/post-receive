@@ -1,0 +1,53 @@
+#!/bin/sh
+IP4_GIT_SERVER_IP=192.168.2.134
+
+CUR_DIR=`pwd`
+PRO_NAME=`echo $CUR_DIR | cut -d '/' -f6 | cut -d "." -f1`
+#echo "PRO_NAME=$PRO_NAME"
+
+GIT_REPOS_NAME=$PRO_NAME
+GIT_ORIGIN_NAME="git@$IP4_GIT_SERVER_IP:$GIT_REPOS_NAME"
+
+BRANCH_NAME=''
+
+branch_num=`git branch | wc -l`
+#echo $branch_num
+branch_list="`ls refs/heads/`"
+#echo $branch_list
+branch_var=''
+
+exit_code=0
+
+env -i git remote -v | grep origin | grep $GIT_ORIGIN_NAME > /dev/null
+if test $? -ne 0; then
+	env -i git remote -v | grep origin > /dev/null
+	if test $? -eq 0; then
+		env -i git remote rm origin
+	fi
+env -i git remote add origin $GIT_ORIGIN_NAME
+fi
+
+
+branch_index=0
+while [ "$branch_index" != "$branch_num" ]
+do
+	branch_index=$((branch_index + 1))
+	
+	read STDIN
+	BRANCH_NAME=`echo $STDIN | cut -d ' ' -f3 | cut -d '/' -f3`
+	if [ -z "$BRANCH_NAME" ]; then
+		break;
+	fi
+	
+	echo "[$BRANCH_NAME]"
+	echo "Update $BRANCH_NAME to IP4 git server repos"
+	git push origin $BRANCH_NAME:$BRANCH_NAME
+	if test $? -ne 0;then
+		echo "Faild to update $BRANCH_NAME to IP4 git server repos"
+		exit_code=1
+	fi
+
+done
+
+exit $exit_code
+
