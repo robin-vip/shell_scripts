@@ -33,7 +33,7 @@ GetIniKey()
     /^$/d
     /^#.*$/d
     s/^[ \t]*$key[ \t]*=[ \t]*\(.*\)[ \t]*/\1/p
-    }" $inifile | sed 's/#.*$//g'
+    }" $inifile | sed 's/#.*$//g' | sed 's/[ \t]*$//g'
     
     return 0
 }
