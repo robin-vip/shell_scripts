@@ -37,13 +37,18 @@ while [ $Index -le $ReposNum ]; do
 			remote_url=$(git remote -v | awk '{print $2}' | uniq | sed -n "`echo $remote_idx`p")
 			PrintLog "push repos:\"$repos\" to $remote_url"
 			
+			# pull from "gogo_local:master"
 			if [ "gogs_local" == "$remote_name" ]; then
-				branch="development"
+				git pull $remote_name master:master
+				local_branch="development"
+				remote_branch="development"
 			else
-				branch="master"
+				local_branch="master"
+				remote_branch="master"
 			fi
 			
-			git push $remote_name master:$branch >> $LogFile 2>&1
+			# push to remote repository.
+			git push $remote_name $local_branch:$remote_branch >> $LogFile 2>&1
 			echo "" >> $LogFile
 			let remote_idx+=1
 		done
