@@ -16,6 +16,7 @@ InitTask()
 	source ../../config_parase/ini_prase.sh
 	LogFile="$(GetIniKey "$ConfigFile" "Header:ConfigPath")/$LogFile"
 	ReposNum=$(GetIniKey "$ConfigFile" "Header:ReposNum")
+	ConfigFile="`dirname $0`/$ConfigFile"
 	cd $OLD_DIR
 }
 
